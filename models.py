@@ -1,3 +1,4 @@
+from pathlib import Path
 from torch.nn import Module, Linear, ReLU, Softmax, Flatten, Conv2d, MaxPool2d, Sequential, init
 import torch
 
@@ -44,6 +45,15 @@ class BaseModel(Module, ABC):
         """
         self.optimizer = optimizer(self.parameters(), **kwargs)
         self.optimizer
+        
+    def save(self, path: str|Path):
+        torch.save(self.state_dict(), path)
+        
+    @staticmethod
+    def from_checkpoint(path: str|Path):
+        model = LittleModel()
+        model.load_state_dict(torch.load(path))
+        return model
     
 class LittleModel(BaseModel):
     """

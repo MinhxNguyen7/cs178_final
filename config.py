@@ -7,3 +7,5 @@ PREFERRED_DEVICE = GPU if GPU else CPU
 
 LEGEND_PATH = Path("facial_expressions/data/legend.csv")
 IMG_DIR = Path("facial_expressions/images")
+
+CHECKPOINTS_DIR = Path("checkpoints")
