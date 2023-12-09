@@ -39,7 +39,7 @@ def square(img: np.ndarray, size: int = 350, interpolation = cv2.INTER_CUBIC) ->
         img = cv2.copyMakeBorder(img, padding, padding, 0, 0, cv2.BORDER_CONSTANT, value = (0, 0, 0))
 
     # Resize to 350x350
-    target_shape = (channels, size, size) if channels is None else (size, size, channels)
+    target_shape = (1, size, size) if channels is None else (size, size, channels)
     img = cv2.resize(img, target_shape, interpolation = interpolation)
     
     return img
