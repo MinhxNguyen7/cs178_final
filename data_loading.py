@@ -22,6 +22,8 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, legend: pd.DataFrame, img_dir: str|Path, transform: Callable[[np.ndarray], np.ndarray] = lambda x: x):
         """
         Creates a dataset object for a legend of image paths and labels for use in PyTorch's Dataloader.
+        
+        Automatically drop unecessary columns and filter out images with unknown labels.
 
         Parameters
         ----------
@@ -55,7 +57,7 @@ class Dataset(torch.utils.data.Dataset):
 
     def split(self, sizes: list[float]) -> list["Dataset"]:
         """
-        Randomly splits the dataset into subsets of given size ratios.
+        Probabilistically splits the dataset into subsets of given size ratios.
 
         Parameters
         ----------
@@ -106,6 +108,9 @@ def collate_fn(batch: list[tuple[torch.Tensor, torch.Tensor]]) -> tuple[torch.Te
     return images, labels
 
 def dataloader_factory(dataset: Dataset, shuffle: bool = True, batch_size = 16) -> torch.utils.data.DataLoader:
+    """
+    Create a DataLoader for a given Dataset.
+    """
     return torch.utils.data.DataLoader(
         dataset,
         batch_size,
