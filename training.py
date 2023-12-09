@@ -32,6 +32,27 @@ def evaluate(
 
     return total_loss / len(loader)
 
+def error_rate(model: BaseModel, loader: torch.utils.data.DataLoader, device: torch.device = PREFERRED_DEVICE) -> float:
+    model.eval()
+    model.to(device)
+
+    total_correct = 0
+    count = 0
+
+    with torch.no_grad():
+        for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)
+
+            predictions = torch.argmax(outputs, dim=1)
+
+            total_correct += torch.sum(predictions == labels).item()
+            count += len(labels)
+
+    return 1 - (total_correct / count)
+
 def train(
     model: BaseModel,
     train_loader: torch.utils.data.DataLoader,
