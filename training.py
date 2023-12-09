@@ -5,6 +5,7 @@ import torch
 import torch.utils.data # I don't know why this isn't included in torch
 import numpy as np
 
+import shutil
 import time
 
 def evaluate(
@@ -59,6 +60,7 @@ def train(
         raise ValueError("Model has no optimizer. Did you forget to call model.apply_optimizer()?")
     
     print(f"Training on device {device}")
+    terminal_width = shutil.get_terminal_size().columns
     
     model.train()
     model.to(device)
@@ -103,6 +105,9 @@ def train(
                 print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
                 
         end_time = time.time()
-        print(f"Epoch {epoch + 1} took {end_time - start_time} seconds")
+        
+        print(f"Epoch {epoch + 1} took {round((end_time - start_time), 2)} seconds")
+        print("-" * terminal_width) # Print a line to separate epochs
+        
 
     return losses
