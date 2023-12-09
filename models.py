@@ -109,6 +109,6 @@ class LittleModel(BaseModel):
         """
         loss = torch.nn.CrossEntropyLoss()
         model = LittleModel()
-        model.apply_optimizer(torch.optim.SGD, lr=0.001, momentum=0.9)
+        model.apply_optimizer(torch.optim.Adam, lr=0.0001)
         
         return model, loss
