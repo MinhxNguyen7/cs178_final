@@ -21,7 +21,8 @@ def greyscale(img: np.ndarray) -> np.ndarray:
 def square(img: np.ndarray, size: int = 350, interpolation = cv2.INTER_CUBIC) -> np.ndarray:
     """
     Transform a raw image of shape (h, w, c) to a square image of (size, size, c).
-    If the image is of shape (h, w), then the output will be of shape (c, size, size).
+    
+    If the image is of shape (h, w), then the output will be of shape (1, size, size) to allow for batching with PyTorch.
     
     Uses cv2.copyMakeBorder to pad the image and cv2.resize for interpolation it.
     """
@@ -39,8 +40,11 @@ def square(img: np.ndarray, size: int = 350, interpolation = cv2.INTER_CUBIC) ->
         img = cv2.copyMakeBorder(img, padding, padding, 0, 0, cv2.BORDER_CONSTANT, value = (0, 0, 0))
 
     # Resize to 350x350
-    target_shape = (1, size, size) if channels is None else (size, size, channels)
-    img = cv2.resize(img, target_shape, interpolation = interpolation)
+    img = cv2.resize(img, (size, size), interpolation = interpolation)
+    
+    if channels is None:
+        # Reshape the image so that it's (1, size, size)
+        img = img.reshape((1, size, size))
     
     return img
     
