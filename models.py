@@ -91,4 +91,14 @@ class LittleModel(BaseModel):
 
         if module.bias is not None and callable(module.bias.data.fill_):
             module.bias.data.fill_(0)
-            
+    
+    @staticmethod
+    def create_default():
+        """
+        Create the default model to skip the setup.
+        """
+        loss = torch.nn.CrossEntropyLoss()
+        model = LittleModel()
+        model.apply_optimizer(torch.optim.SGD, lr=0.001, momentum=0.9)
+        
+        return model, loss
