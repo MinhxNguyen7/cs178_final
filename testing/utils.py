@@ -14,6 +14,16 @@ import torch.utils.data
 
 from transformations import cnn_preprocess
 
+def rowwise_equality(a: pd.DataFrame, b: pd.DataFrame) -> bool:
+    """
+    Returns True if all row values in a Dataframe are equal.
+    """
+    for a_series, b_series in zip(a.iterrows(), b.iterrows()):
+        if not all(x == y for x, y in zip(a_series[1].values, b_series[1].values)):
+            return False
+        
+    return True
+
 def single_dataloaders(
     legend_path: str|Path = LEGEND_PATH, 
     img_dir: str|Path = IMG_DIR, 
@@ -30,6 +40,8 @@ def single_dataloaders(
     # Only the second datapoint
     val_legend = pd.read_csv(legend_path)
     val_legend = val_legend.drop(val_legend.index[0] + val_legend.index[2:])
+    
+    assert not rowwise_equality(train_legend, val_legend)
 
     # Create dataset and dataloader
     train_dataset = Dataset(train_legend, img_dir, transform)
