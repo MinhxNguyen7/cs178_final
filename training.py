@@ -42,10 +42,18 @@ def train(
     verbose = True
 ) -> dict[str, np.ndarray]:
     """
-    General implementation of the training loop.
+    General implementation of the training loop. 
+    
+    Returns the training and validation losses as a 2-axis numpy arrays of (epoch, log_point) in a dictionary.
     
     Example: 
-        losses = train(model, train_loader, val_loader, CrossEntropyLoss(), torch.optim.SGD(model.parameters(), lr=0.0003, momentum=0.9), epochs = 10)
+        losses = train(model, train_loader, val_loader, CrossEntropyLoss(), torch.optim.Adam(model.parameters(), lr=0.0003), epochs = 10)
+        
+        training_loss = losses['train']
+        validation_loss = losses['val']
+        
+        training_loss_per_epoch = np.mean(training_loss, axis=1)
+        validation_loss_per_epoch = np.mean(validation_loss, axis=1)
     """
     if not model.optimizer:
         raise ValueError("Model has no optimizer. Did you forget to call model.apply_optimizer()?")
