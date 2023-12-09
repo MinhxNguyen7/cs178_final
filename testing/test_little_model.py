@@ -13,11 +13,14 @@ class TestLittleModel(unittest.TestCase):
         """
         model, loss = LittleModel.create_default()
         
-        losses = train(model, *single_dataloaders(), loss, epochs=100, verbose=False)
+        losses = train(model, *single_dataloaders(), loss, epochs=3, verbose=False)
+        
+        training_loss = losses['train'][-1]
+        testing_loss = losses['val'][-1]
         
         # Ensure that the model overfits the training datapoint
-        self.assertLess(losses[0], 0.001)
-        self.assertGreater(losses[-1], losses[0] * 100) # training loss should be 100x smaller than testing loss
+        self.assertLess(training_loss, 0.001)
+        self.assertGreater(testing_loss, training_loss * 100) # training loss should be 100x smaller than testing loss
 
 if __name__ == '__main__':
     unittest.main()
