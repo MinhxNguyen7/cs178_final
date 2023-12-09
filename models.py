@@ -79,7 +79,6 @@ class LittleModel(BaseModel):
             ("relu2", ReLU()),
 
             ("fc3", Linear(32, 8)),
-            ("soft", Softmax())
         ])
         
         super().__init__(Sequential(layers))
