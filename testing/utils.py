@@ -35,11 +35,13 @@ def single_dataloaders(
     
     # Only the first datapoint
     train_legend = pd.read_csv(legend_path)
-    train_legend = train_legend.drop(train_legend.index[1:])
+    train_legend.drop(index=train_legend.index[1:], inplace=True)
 
     # Only the second datapoint
     val_legend = pd.read_csv(legend_path)
-    val_legend = val_legend.drop(val_legend.index[0] + val_legend.index[2:])
+    val_legend.drop(index=val_legend.index[2:], inplace=True)
+    val_legend.drop(index=val_legend.index[0], inplace=True)
+    val_legend.reset_index(drop=True, inplace=True)
     
     assert not rowwise_equality(train_legend, val_legend)
 
