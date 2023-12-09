@@ -1,4 +1,5 @@
 from config import LEGEND_PATH, IMG_DIR
+from transformations import cnn_preprocess
 
 import torch.utils.data
 from matplotlib import pyplot as plt
@@ -119,37 +120,9 @@ def dataloader_factory(dataset: Dataset, shuffle: bool = True, batch_size = 16) 
         collate_fn=collate_fn
     )
 
-def transformation(img: np.ndarray) -> np.ndarray:
-    """
-    Transform a raw image of shape (h, w, 3) to a square, greyscale image of shape (1, 350, 350).
-    Convert it to grayscale, then pad the smaller dimension, then resize it with `cv2.resize`.
-    """
-    # Convert to grayscale
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Pad the image to make it square
-    height, width = img.shape
-
-    if height > width:
-        # Pad left and right
-        padding = (height - width) // 2
-        img = cv2.copyMakeBorder(img, 0, 0, padding, padding, cv2.BORDER_CONSTANT, value = (0, 0, 0))
-    elif width > height:
-        # Pad top and bottom
-        padding = (width - height) // 2
-        img = cv2.copyMakeBorder(img, padding, padding, 0, 0, cv2.BORDER_CONSTANT, value = (0, 0, 0))
-
-    # Resize to 350x350
-    img = cv2.resize(img, (350, 350), interpolation = cv2.INTER_CUBIC)
-
-    # Add a channel dimension
-    img = img.reshape((1, 350, 350))
-
-    return img
-
 if __name__ == '__main__':
     legend = pd.read_csv(LEGEND_PATH)
-    dataset = Dataset(legend, IMG_DIR, transformation)
+    dataset = Dataset(legend, IMG_DIR, cnn_preprocess)
     train_set, val_set, test_set = dataset.split([0.8, 0.1, 0.1])
     train_loader, val_loader, test_loader = map(dataloader_factory, [train_set, val_set, test_set])
     
@@ -164,6 +137,6 @@ if __name__ == '__main__':
         axes[0, index].imshow(image)
         axes[0, index].set_title("before")
 
-        transformed = transformation(image)
+        transformed = cnn_preprocess(image)
         axes[1, index].imshow(transformed[0], cmap = "gray")
         axes[1, index].set_title("after")
