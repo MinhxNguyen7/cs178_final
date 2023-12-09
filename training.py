@@ -84,13 +84,15 @@ def train(
             # Optimize
             model.optimizer.step()
             
-            if verbose and batch % log_interval == 0:
+            if batch % log_interval == 0:
                 training_loss = torch.mean(loss).item()
                 validation_loss = evaluate(model, val_loader, loss_fn, device)
 
-                print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
                 losses["train"][epoch, batch] = training_loss
                 losses["val"][epoch, batch] = validation_loss
+                
+                if not verbose: continue
+                print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
                 
         end_time = time.time()
         print(f"Epoch {epoch + 1} took {end_time - start_time} seconds")
