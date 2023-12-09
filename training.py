@@ -38,7 +38,8 @@ def train(
     loss_fn: torch.nn.Module,
     device: torch.device = PREFERRED_DEVICE,
     epochs: int = 1,
-    log_interval: int = 100
+    log_interval: int = 100,
+    verbose = True
 ) -> dict[str, np.ndarray]:
     """
     General implementation of the training loop.
@@ -82,8 +83,8 @@ def train(
 
             # Optimize
             model.optimizer.step()
-
-            if batch % log_interval == 0:
+            
+            if verbose and batch % log_interval == 0:
                 training_loss = torch.mean(loss).item()
                 validation_loss = evaluate(model, val_loader, loss_fn, device)
 

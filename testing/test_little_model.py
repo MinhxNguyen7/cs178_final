@@ -11,9 +11,9 @@ class TestLittleModel(unittest.TestCase):
         
         This test is meant to ensure that the model is able to overfit a single datapoint.
         """
-        model = LittleModel.create_default()
+        model, loss = LittleModel.create_default()
         
-        losses = train(model, *single_dataloaders(), epochs=100, verbose=False)
+        losses = train(model, *single_dataloaders(), loss, epochs=100, verbose=False)
         
         # Ensure that the model overfits the training datapoint
         self.assertLess(losses[0], 0.001)
