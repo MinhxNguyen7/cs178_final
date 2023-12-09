@@ -116,7 +116,7 @@ def dataloader_factory(dataset: Dataset, shuffle: bool = True, batch_size = 16) 
         dataset,
         batch_size,
         shuffle = shuffle,
-        num_workers = 2,
+        num_workers = 3,
         collate_fn=collate_fn
     )
 
