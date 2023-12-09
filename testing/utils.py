@@ -24,16 +24,16 @@ def single_dataloaders(
     """
     
     # Only the first datapoint
-    train_legend = pd.read_csv(LEGEND_PATH)
+    train_legend = pd.read_csv(legend_path)
     train_legend = train_legend.drop(train_legend.index[1:])
 
     # Only the second datapoint
-    val_legend = pd.read_csv(LEGEND_PATH)
+    val_legend = pd.read_csv(legend_path)
     val_legend = val_legend.drop(val_legend.index[0] + val_legend.index[2:])
 
     # Create dataset and dataloader
-    train_dataset = Dataset(train_legend, IMG_DIR, transform)
-    val_dataset = Dataset(val_legend, IMG_DIR, transform)
+    train_dataset = Dataset(train_legend, img_dir, transform)
+    val_dataset = Dataset(val_legend, img_dir, transform)
     train_dataloader = dataloader_factory(train_dataset, batch_size=1, shuffle=False)
     val_dataloader = dataloader_factory(val_dataset, batch_size=1, shuffle=False)
     
