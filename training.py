@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from config import PREFERRED_DEVICE
 from models import BaseModel
 
@@ -61,12 +63,34 @@ def train(
     device: torch.device = PREFERRED_DEVICE,
     epochs: int = 1,
     log_interval: int = 100,
+    results_file: str|Path|None = None,
+    save_interval: int = 0,
+    checkpoint_prefix: str = "checkpoint",
     verbose = True
 ) -> dict[str, np.ndarray]:
     """
     General implementation of the training loop. 
     
-    Returns the training and validation losses as a 2-axis numpy arrays of (epoch, log_point) in a dictionary.
+    Returns the training and validation losses as a 2-axis arrays of (epoch, log_point) in a dictionary.
+    
+    Saves the model every save_interval epochs if save_interval > 0. 
+    Checkpoints are saved in {checkpoint_prefix}_{epoch}.pt.
+    
+    Saves the experiment results to results_file if results_file is not None.
+    Validation error rates are calculated and saved to results["error_rates"] every epoch.
+    
+    Parameters:
+        model: The model to train.
+        train_loader: The training data loader.
+        val_loader: The validation data loader.
+        loss_fn: The loss function to use.
+        device: The device to use for training.
+        epochs: The number of epochs to train for.
+        log_interval: The number of batches between each log.
+        results_file: The path to save the experiment results to (json).
+        save_interval: The number of epochs between each save. If 0, the model is not saved.
+        checkpoint_prefix: The prefix to use for the checkpoint files.
+        verbose: Whether to print the training and validation losses.
     
     Example: 
         losses = train(model, train_loader, val_loader, CrossEntropyLoss(), torch.optim.Adam(model.parameters(), lr=0.0003), epochs = 10)
@@ -85,11 +109,23 @@ def train(
     
     model.train()
     model.to(device)
-
-    losses = {
-        "train": np.zeros((epochs, len(train_loader))),
-        "val": np.zeros((epochs, len(train_loader)))
+    
+    results = {
+        "setup": {
+            "model": model.__class__.__name__,
+            "optimizer": model.optimizer.__repr__(),
+            "loss_fn": loss_fn.__repr__(),
+        },
+        "losses": {
+            "train": np.zeros((epochs, len(train_loader))).tolist(),
+            "val": np.zeros((epochs, len(train_loader))).tolist()
+        },
+        "error_rates": np.zeros(epochs).tolist()
     }
+    
+    if results_file:
+        # Create the directory if it doesn't exist
+        Path(results_file).parent.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1} of {epochs}")
@@ -119,11 +155,19 @@ def train(
                 training_loss = torch.mean(loss).item()
                 validation_loss = evaluate(model, val_loader, loss_fn, device)
 
-                losses["train"][epoch, batch] = training_loss
-                losses["val"][epoch, batch] = validation_loss
+                results["losses"]["train"][epoch][batch] = training_loss
+                results["losses"]["val"][epoch][batch] = validation_loss
                 
                 if not verbose: continue
                 print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
+                
+        if save_interval > 0 and (epoch + 1) % save_interval == 0:
+            checkpoint_path = Path(f"{checkpoint_prefix}_{epoch + 1}")
+            model.save(f"{checkpoint_path}")
+            print(f"Saved checkpoint to {checkpoint_path}.pt")
+            
+        if results_file:
+            json.dump(results, open(results_file, "w"))
                 
         end_time = time.time()
         
@@ -131,4 +175,4 @@ def train(
         print("-" * terminal_width) # Print a line to separate epochs
         
 
-    return losses
+    return results["losses"]
