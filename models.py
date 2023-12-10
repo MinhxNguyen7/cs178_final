@@ -1,9 +1,18 @@
-from pathlib import Path
-from torch.nn import Module, Linear, ReLU, Softmax, Flatten, Conv2d, MaxPool2d, Sequential, init
+import json
+import shutil
+import time
+from config import PREFERRED_DEVICE
+
+from torch.nn import Module, Linear, ReLU, Flatten, Conv2d, MaxPool2d, Sequential, init, Dropout
+import torch.utils.data
+
+import numpy as np
 import torch
 
 from collections import OrderedDict
 from abc import ABC, abstractmethod
+from pathlib import Path
+
 
 class BaseModel(Module, ABC):
     """
@@ -55,6 +64,179 @@ class BaseModel(Module, ABC):
         model.load_state_dict(torch.load(path))
         return model
     
+    def tr(self) -> None:
+        """
+        Toggle training mode since this model overrides the `train` method of torch.nn.Module.
+        """
+        super().train()
+    
+    def evaluate(
+        self,
+        loader: torch.utils.data.DataLoader,
+        loss_fn: torch.nn.Module = torch.nn.CrossEntropyLoss(),
+        device: torch.device = PREFERRED_DEVICE
+    ) -> float:
+        self.eval()
+        self.to(device)
+
+        total_loss = 0.0
+
+        with torch.no_grad():
+            for images, labels in loader:
+                images = images.to(device)
+                labels = labels.to(device)
+
+                outputs = self(images)
+
+                loss = loss_fn(outputs, labels)
+
+                total_loss += loss.item()
+
+        return total_loss / len(loader)
+
+    def error_rate(self, loader: torch.utils.data.DataLoader, device: torch.device = PREFERRED_DEVICE) -> float:
+        self.eval()
+        self.to(device)
+
+        total_correct = 0
+        count = 0
+
+        with torch.no_grad():
+            for images, labels in loader:
+                images = images.to(device)
+                labels = labels.to(device)
+
+                outputs = self(images)
+
+                predictions = torch.argmax(outputs, dim=1)
+
+                total_correct += torch.sum(predictions == labels).item()
+                count += len(labels)
+
+        return 1 - (total_correct / count)
+    
+    def train(
+        self,
+        train_loader: torch.utils.data.DataLoader,
+        val_loader: torch.utils.data.DataLoader,
+        loss_fn: torch.nn.Module,
+        device: torch.device = PREFERRED_DEVICE,
+        epochs: int = 1,
+        log_interval: int = 100,
+        results_file: str|Path|None = None,
+        save_interval: int = 0,
+        checkpoint_prefix: str = "checkpoint",
+        verbose = True
+    ) -> dict[str, np.ndarray]:
+        """
+        General implementation of the training loop. 
+        
+        Returns the training and validation losses as a 2-axis arrays of (epoch, log_point) in a dictionary.
+        
+        Saves the model every save_interval epochs if save_interval > 0. 
+        Checkpoints are saved in {checkpoint_prefix}_{epoch}.pt.
+        
+        Saves the experiment results to results_file if results_file is not None.
+        Validation error rates are calculated and saved to results["error_rates"] every epoch.
+        
+        Parameters:
+            model: The model to train.
+            train_loader: The training data loader.
+            val_loader: The validation data loader.
+            loss_fn: The loss function to use.
+            device: The device to use for training.
+            epochs: The number of epochs to train for.
+            log_interval: The number of batches between each log.
+            results_file: The path to save the experiment results to (json).
+            save_interval: The number of epochs between each save. If 0, the model is not saved.
+            checkpoint_prefix: The prefix to use for the checkpoint files.
+            verbose: Whether to print the training and validation losses.
+        
+        Example: 
+            losses = train(model, train_loader, val_loader, CrossEntropyLoss(), torch.optim.Adam(model.parameters(), lr=0.0003), epochs = 10)
+            
+            training_loss = losses['train']
+            validation_loss = losses['val']
+            
+            training_loss_per_epoch = np.mean(training_loss, axis=1)
+            validation_loss_per_epoch = np.mean(validation_loss, axis=1)
+        """
+        if not self.optimizer:
+            raise ValueError("Model has no optimizer. Did you forget to call model.apply_optimizer()?")
+        
+        print(f"Training on device {device}")
+        terminal_width = shutil.get_terminal_size().columns
+        
+        self.tr()
+        self.to(device)
+        
+        results = {
+            "setup": {
+                "model": self.__class__.__name__,
+                "optimizer": self.optimizer.__repr__(),
+                "loss_fn": loss_fn.__repr__(),
+            },
+            "losses": {
+                "train": np.zeros((epochs, len(train_loader))).tolist(),
+                "val": np.zeros((epochs, len(train_loader))).tolist()
+            },
+            "error_rates": np.zeros(epochs).tolist()
+        }
+        
+        if results_file:
+            # Create the directory if it doesn't exist
+            Path(results_file).parent.mkdir(parents=True, exist_ok=True)
+
+        for epoch in range(epochs):
+            print(f"Epoch {epoch + 1} of {epochs}")
+            
+            start_time = time.time()
+
+            for batch, (images, labels) in enumerate(train_loader):
+                # Send to device
+                images = images.to(device)
+                labels = labels.to(device)
+
+                self.optimizer.zero_grad()
+
+                # Forward pass
+                outputs = self(images)
+
+                # Calculate loss
+                loss = loss_fn(outputs, labels)
+
+                # Backward pass
+                loss.backward()
+
+                # Optimize
+                self.optimizer.step()
+                
+                if batch % log_interval == 0:
+                    training_loss = torch.mean(loss).item()
+                    validation_loss = self.evaluate(val_loader, loss_fn, device)
+
+                    results["losses"]["train"][epoch][batch] = training_loss
+                    results["losses"]["val"][epoch][batch] = validation_loss
+                    
+                    if not verbose: continue
+                    print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
+                    
+            if save_interval > 0 and (epoch + 1) % save_interval == 0:
+                checkpoint_path = Path(f"{checkpoint_prefix}_{epoch + 1}")
+                self.save(f"{checkpoint_path}")
+                print(f"Saved checkpoint to {checkpoint_path}.pt")
+                
+            if results_file:
+                json.dump(results, open(results_file, "w"))
+                    
+            end_time = time.time()
+            
+            print(f"Epoch {epoch + 1} took {round((end_time - start_time), 2)} seconds")
+            print("-" * terminal_width) # Print a line to separate epochs
+            
+
+        return results["losses"]
+    
 class LittleModel(BaseModel):
     """
     Takes a greyscale image and predicts one of the eight classes.
@@ -93,7 +275,8 @@ class LittleModel(BaseModel):
         
         super().__init__(Sequential(layers))
 
-    def init_weights(self, module: Module) -> None:
+    @staticmethod
+    def init_weights(module: Module) -> None:
         if not (isinstance(module, Conv2d) or isinstance(module, Linear)):
             return
 
@@ -101,6 +284,66 @@ class LittleModel(BaseModel):
 
         if module.bias is not None and callable(module.bias.data.fill_):
             module.bias.data.fill_(0)
+    
+    @staticmethod
+    def create_default():
+        """
+        Create the default model to skip the setup.
+        """
+        loss = torch.nn.CrossEntropyLoss()
+        model = LittleModel()
+        model.apply_optimizer(torch.optim.Adam, lr=0.0001)
+        
+        return model, loss
+
+class LittleDropout(BaseModel):
+    """
+    Same as LittleModel, but with dropout layers.
+    
+    Dropout will be automatically deactivated during evaluation (after calling model.eval()).
+    """
+    def __init__(self, dropout: float = 0.2):
+        """
+        Parameters:
+            dropout: Probability that a parameter is dropped (set to 0).
+        """
+        # Input shape = (1, 350, 350)
+
+        layers: OrderedDict[str, Module] = OrderedDict([
+            ("conv1", Conv2d(1, 64, 5, 2)), # (64, 263, 263)
+            ("pool1", MaxPool2d(kernel_size = 5, stride=2)), # (64, 130, 130)
+
+            ("conv2", Conv2d(64, 256, 3)), # (256, 128, 128)
+            ("pool2", MaxPool2d(kernel_size = 3, stride = 2, padding = 1)), # (256, 64, 64)
+
+            ("conv3", Conv2d(256, 512, 3, 1, padding = 1)), # (512, 64, 64)
+            ("pool3", MaxPool2d(3, 2, 1)), # (512, 32, 32)
+
+            ("conv4", Conv2d(512, 1024, 3, 1, padding = 1)), # (512, 32, 32)
+            ("pool4", MaxPool2d(3, 2, 1)), # (512, 16, 16)
+
+            ("conv5", Conv2d(1024, 1024, 3, 1, padding = 1)), # (1024, 14, 14)
+            ("pool5", MaxPool2d(3, 2, 1)), # (1024, 6, 6)
+
+            # Fully-connected
+            ("flat", Flatten()),
+
+            ("droupout1", Dropout(dropout)), # Dropout layer
+            ("fc1", Linear(1024 * 6 * 6,  128)),
+            ("relu1", ReLU()),
+
+            ("droupout2", Dropout(dropout)), # Dropout layer
+            ("fc2", Linear(128, 32)),
+            ("relu2", ReLU()),
+
+            ("droupout3", Dropout(dropout)), # Dropout layer
+            ("fc3", Linear(32, 8)),
+        ])
+        
+        super().__init__(Sequential(layers))
+
+    def init_weights(self, module: Module) -> None:
+        return LittleModel.init_weights(module)
     
     @staticmethod
     def create_default():
