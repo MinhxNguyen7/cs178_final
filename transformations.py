@@ -10,7 +10,7 @@ def cnn_preprocess(img: np.ndarray) -> np.ndarray:
     Transform a raw image of shape (h, w, 3) to a square, greyscale image of shape (1, 350, 350).
     Convert it to grayscale, then pad the smaller dimension, then resize it with `cv2.resize`.
     """
-    return greyscale(square(img))
+    return greyscale(square(augment(img)))
 
 def greyscale(img: np.ndarray) -> np.ndarray:
     """
@@ -47,6 +47,8 @@ def square(img: np.ndarray, size: int = 350, interpolation = cv2.INTER_CUBIC) ->
         img = img.reshape((1, size, size))
     
     return img
-    
-    
+
+# TODO: Implement data augmentation
+def augment(img: np.ndarray) -> np.ndarray:
+    return img
     
