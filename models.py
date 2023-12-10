@@ -64,12 +64,6 @@ class BaseModel(Module, ABC):
         model.load_state_dict(torch.load(path))
         return model
     
-    def tr(self) -> None:
-        """
-        Toggle training mode since this model overrides the `train` method of torch.nn.Module.
-        """
-        super().train()
-    
     def evaluate(
         self,
         loader: torch.utils.data.DataLoader,
@@ -115,7 +109,7 @@ class BaseModel(Module, ABC):
 
         return 1 - (total_correct / count)
     
-    def train(
+    def train_loop(
         self,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
@@ -167,7 +161,7 @@ class BaseModel(Module, ABC):
         print(f"Training on device {device}")
         terminal_width = shutil.get_terminal_size().columns
         
-        self.tr()
+        self.train()
         self.to(device)
         
         results = {
