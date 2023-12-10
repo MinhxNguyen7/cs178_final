@@ -12,6 +12,7 @@ LEGEND_PATH = Path("facial_expressions/data/legend.csv")
 IMG_DIR = Path("facial_expressions/images")
 
 CHECKPOINTS_DIR = Path("checkpoints")
+RESULTS_DIR = Path("results")
 
 SEED = 1234
 
