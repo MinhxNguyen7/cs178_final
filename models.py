@@ -216,9 +216,9 @@ class BaseModel(Module, ABC):
                     print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
                     
             if save_interval > 0 and (epoch + 1) % save_interval == 0:
-                checkpoint_path = Path(f"{checkpoint_prefix}_{epoch + 1}")
-                self.save(f"{checkpoint_path}")
-                print(f"Saved checkpoint to {checkpoint_path}.pt")
+                checkpoint_path = Path(f"{checkpoint_prefix}_{epoch + 1}.pt")
+                self.save(checkpoint_path)
+                print(f"Saved checkpoint to {checkpoint_path}")
                 
             if results_file:
                 json.dump(results, open(results_file, "w"))
