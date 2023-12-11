@@ -291,17 +291,17 @@ class LittleModel(BaseModel):
         
         return model, loss
 
-class LittleDropout(BaseModel):
+class MoreFCDropout(BaseModel):
     """
-    Same as LittleModel, but with dropout layers.
+    Same as little model but with more fully-connected layers. 
+    This can potentially help with convergence because not so much information needs to pass through each neuron.
+    Then, we can apply dropout to prevent overfitting.
+    """
     
-    Dropout will be automatically deactivated during evaluation (after calling model.eval()).
-    """
-    def __init__(self, dropout: float = 0.2):
-        """
-        Parameters:
-            dropout: Probability that a parameter is dropped (set to 0).
-        """
+    def __init__(self, dropout_rate = 0.0):
+        if not (0 <= dropout_rate <= 1):
+            raise ValueError("dropout_rate must be between 0 and 1")
+        
         # Input shape = (1, 350, 350)
 
         layers: OrderedDict[str, Module] = OrderedDict([
@@ -323,22 +323,37 @@ class LittleDropout(BaseModel):
             # Fully-connected
             ("flat", Flatten()),
 
-            ("droupout1", Dropout(dropout)), # Dropout layer
-            ("fc1", Linear(1024 * 6 * 6,  128)),
+            ("drop1", Dropout(dropout_rate)),
+            ("fc1", Linear(1024 * 6 * 6,  2048)),
             ("relu1", ReLU()),
 
-            ("droupout2", Dropout(dropout)), # Dropout layer
-            ("fc2", Linear(128, 32)),
+            ("drop2", Dropout(dropout_rate)),
+            ("fc2", Linear(2048, 512)),
             ("relu2", ReLU()),
+            
+            ("drop3", Dropout(dropout_rate)),
+            ("fc3", Linear(512, 128)),
+            ("relu3", ReLU()),
 
-            ("droupout3", Dropout(dropout)), # Dropout layer
-            ("fc3", Linear(32, 8)),
+            ("drop4", Dropout(dropout_rate)),
+            ("fc4", Linear(128, 64)),
+            ("relu4", ReLU()),
+
+            # 64 nodes is already quite restrictive, so we probably don't need dropout here
+            ("fc6", Linear(64, 8)),
         ])
         
         super().__init__(Sequential(layers))
 
-    def init_weights(self, module: Module) -> None:
-        return LittleModel.init_weights(module)
+    @staticmethod
+    def init_weights(module: Module) -> None:
+        if not (isinstance(module, Conv2d) or isinstance(module, Linear)):
+            return
+
+        init.kaiming_normal_(module.weight)
+
+        if module.bias is not None and callable(module.bias.data.fill_):
+            module.bias.data.fill_(0)
     
     @staticmethod
     def create_default():
@@ -347,6 +362,6 @@ class LittleDropout(BaseModel):
         """
         loss = torch.nn.CrossEntropyLoss()
         model = LittleModel()
-        model.apply_optimizer(torch.optim.Adam, lr=0.0001)
+        model.apply_optimizer(torch.optim.Adam, lr=0.0001, weight_decay=0.0005)
         
         return model, loss
