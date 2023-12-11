@@ -221,6 +221,7 @@ class BaseModel(Module, ABC):
                 print(f"Saved checkpoint to {checkpoint_path}")
                 
             if results_file:
+                results["error_rates"][epoch] = self.error_rate(val_loader, device)
                 json.dump(results, open(results_file, "w"))
                     
             end_time = time.time()
