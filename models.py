@@ -13,6 +13,8 @@ from collections import OrderedDict
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from data_loading import Dataset
+
 
 class BaseModel(Module, ABC):
     """
@@ -38,6 +40,12 @@ class BaseModel(Module, ABC):
     
     def __call__(self, x):
         return self.forward(x)
+    
+    def predict(self, x):
+        """
+        Outputs the actual class name of the prediction.
+        """
+        return Dataset.CLASSES[int(torch.argmax(self(x)).item())]
     
     @property
     def size(self) -> int:
