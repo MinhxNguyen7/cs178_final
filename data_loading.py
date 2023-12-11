@@ -119,6 +119,25 @@ def dataloader_factory(dataset: Dataset, shuffle: bool = True, batch_size = 16) 
         num_workers = 3,
         collate_fn=collate_fn
     )
+    
+def get_dataloaders(
+    legend_path: str|Path = LEGEND_PATH,
+    img_dir: str|Path = IMG_DIR,
+    batch_size = 32,
+    split = [0.8, 0.2]
+):
+    if not isinstance(legend_path, Path): legend_path = Path(legend_path)
+    if not isinstance(img_dir, Path): img_dir = Path(img_dir)
+    
+    if not sum(split) == 1.0:
+        raise ValueError("Split ratios must sum to 1.")
+    
+    # Data setup
+    legend = pd.read_csv(legend_path)
+    dataset = Dataset(legend, img_dir, transform=cnn_preprocess)
+    split_datasets = dataset.split(split)
+
+    return map(dataloader_factory, split_datasets)
 
 if __name__ == '__main__':
     legend = pd.read_csv(LEGEND_PATH)
