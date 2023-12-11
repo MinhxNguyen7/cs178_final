@@ -170,8 +170,8 @@ class BaseModel(Module, ABC):
                 "loss_fn": loss_fn.__repr__(),
             },
             "losses": {
-                "train": np.zeros((epochs, len(train_loader))).tolist(),
-                "val": np.zeros((epochs, len(train_loader))).tolist()
+                "train": np.zeros((epochs, len(train_loader)//log_interval)).tolist(),
+                "val": np.zeros((epochs, len(train_loader)//log_interval)).tolist()
             },
             "error_rates": np.zeros(epochs).tolist()
         }
@@ -210,8 +210,8 @@ class BaseModel(Module, ABC):
                     training_loss = torch.mean(loss).item()
                     validation_loss = self.evaluate(val_loader, loss_fn, device)
 
-                    results["losses"]["train"][epoch][batch] = training_loss
-                    results["losses"]["val"][epoch][batch] = validation_loss
+                    results["losses"]["train"][epoch][batch//log_interval-1] = training_loss
+                    results["losses"]["val"][epoch][batch//log_interval-1] = validation_loss
                     
                     if not verbose: continue
                     print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
