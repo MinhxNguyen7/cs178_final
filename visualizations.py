@@ -99,7 +99,7 @@ def visualize_dropout_variations(model_name: str, dropouts: list[float] = [0, 0.
         axs[row, col].plot(results.loc[index, "test_loss"], label="test")
         axs[row, col].set_title(f"dropout={dropout}")
         axs[row, col].legend()
-        axs[row, col].set_ylim(0, 0.1)
+        axs[row, col].set_ylim(0, 1.2)
     
     plt.legend()
     plt.savefig(Path(RESULTS_DIR, model_name + "_losses.png"))
