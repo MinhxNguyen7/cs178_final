@@ -161,7 +161,6 @@ class BaseModel(Module, ABC):
         print(f"Training on device {device}")
         terminal_width = shutil.get_terminal_size().columns
         
-        self.train()
         self.to(device)
         
         results = {
@@ -187,7 +186,9 @@ class BaseModel(Module, ABC):
             start_time = time.time()
 
             for batch, (images, labels) in enumerate(train_loader):
-                # Send to device
+                self.train()
+                
+                # Send data to device
                 images = images.to(device)
                 labels = labels.to(device)
 
