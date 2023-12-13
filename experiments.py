@@ -16,7 +16,7 @@ from visualizations import visualize_dropout_variations, visualize_l2_variations
 
 def more_fc_dropout_variations(
     dropouts: list[float] = [0, 0.1, 0.2, 0.3, 0.4, 0.5],
-    model_name: str = 'more_fc_dropout',
+    experiment_name: str = 'more_fc_dropout',
     epochs = 75, # More epochs for a deeper, (hopefully) more stable model
     verbose = False
 ):
@@ -32,32 +32,32 @@ def more_fc_dropout_variations(
         # Will automatically save results and losses
         model.train_loop(
             train_loader, test_loader, loss,
-            epochs=epochs, results_file=Path(RESULTS_DIR, model_name + f"={dropout}.json"),
+            epochs=epochs, results_file=Path(RESULTS_DIR, experiment_name + f"={dropout}.json"),
             save_interval=0, verbose=verbose
         )
         
-        model_save_path = Path(CHECKPOINTS_DIR, model_name + f"={dropout}.pt")
+        model_save_path = Path(CHECKPOINTS_DIR, experiment_name + f"={dropout}.pt")
         model.save(model_save_path)
         print(f"Saved model to {model_save_path}")
         
-    visualize_dropout_variations(model_name, dropouts)
+    visualize_dropout_variations(experiment_name, dropouts)
     
 
 def little_model_l2_variations(
     # There's a typo here, it should be 5e-3 instead of 5e-2
     decays: list[float] = [0, 1e-4, 2e-4, 5e-4, 1e-3, 5e-2, 1e-2, 1e-1], 
-    model_name: str = "little_model_decay",
+    experiment_name: str = "little_model_decay",
     epochs = 50
 ):
     for decay in decays:
         print(f"Training model with decay={decay}".center(shutil.get_terminal_size().columns, "="))
         # Will automatically save results and losses
-        little_model_with_l2(decay, model_name + f"={decay}", epochs, visualize = False)
+        little_model_with_l2(decay, experiment_name + f"={decay}", epochs, visualize = False)
         
-    visualize_l2_variations(model_name, decays)
+    visualize_l2_variations(experiment_name, decays)
     
 
-def little_model_with_l2(decay = 0.0001, model_name: str = "little_model_with_l2", epochs = 50, visualize = True):
+def little_model_with_l2(decay = 0.0001, experiment_name: str = "little_model_with_l2", epochs = 50, visualize = True):
     train_loader, test_loader = get_dataloaders()
 
     # Model setup
@@ -68,20 +68,20 @@ def little_model_with_l2(decay = 0.0001, model_name: str = "little_model_with_l2
     # Training
     losses = model.train_loop(
         train_loader, test_loader, loss, 
-        epochs=epochs, results_file=Path(RESULTS_DIR, model_name + ".json"), 
-        save_interval=10, checkpoint_prefix=model_name
+        epochs=epochs, results_file=Path(RESULTS_DIR, experiment_name + ".json"), 
+        save_interval=10, checkpoint_prefix=experiment_name
     )
     
     if visualize:
         # Visualize and save visualizations to file
-        visualize_losses(losses["train"], losses["val"], Path(RESULTS_DIR, model_name + ".png"))
+        visualize_losses(losses["train"], losses["val"], Path(RESULTS_DIR, experiment_name + ".png"))
         
     return model, losses
 
 
-def little_model(model_name: str = "little_model", epochs = 50, visualize = True):
+def little_model(experiment_name: str = "little_model", epochs = 50, visualize = True):
     BATCH_SIZE = 32
-    model_name = "little_model"
+    experiment_name = "little_model"
 
     # Data setup
     legend = pd.read_csv(LEGEND_PATH)
@@ -99,13 +99,13 @@ def little_model(model_name: str = "little_model", epochs = 50, visualize = True
     # Training
     losses = model.train_loop(
         train_loader, test_loader, loss, 
-        epochs=epochs, results_file=Path(RESULTS_DIR, model_name + ".json"), 
-        save_interval=10, checkpoint_prefix=model_name
+        epochs=epochs, results_file=Path(RESULTS_DIR, experiment_name + ".json"), 
+        save_interval=10, checkpoint_prefix=experiment_name
     )
     
     if visualize:
         # Visualize and save visualizations to file
-        visualize_losses(losses["train"], losses["val"], Path(RESULTS_DIR, model_name + ".png"))
+        visualize_losses(losses["train"], losses["val"], Path(RESULTS_DIR, experiment_name + ".png"))
         
     return model, losses
 
