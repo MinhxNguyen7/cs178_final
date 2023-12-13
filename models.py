@@ -255,8 +255,11 @@ class TorchModel(Module, ABC):
             print(f"Epoch {epoch + 1} took {round((end_time - start_time), 2)} seconds")
             print("-" * terminal_width) # Print a line to separate epochs
             
-
-        return results["losses"]
+        results = {
+            **results["losses"],
+            "error_rates": results["error_rates"]
+        }
+        return results
     
 class LittleModel(TorchModel):
     """
