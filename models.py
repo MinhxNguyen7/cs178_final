@@ -43,9 +43,12 @@ class BaseModel(Module, ABC):
     
     def predict(self, x):
         """
-        Outputs the actual class name of the prediction.
+        Outputs the actual class names of the batch of predictions.
         """
-        return Dataset.CLASSES[int(torch.argmax(self(x)).item())]
+        outputs = self(x)
+        predictions = torch.argmax(outputs, dim=1)
+        predictions = [Dataset.CLASSES[prediction] for prediction in predictions]
+        return predictions
     
     @property
     def size(self) -> int:
