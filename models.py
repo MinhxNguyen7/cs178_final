@@ -30,6 +30,7 @@ class BaseModel(Module, ABC):
         self._size = sum(p.numel() for p in self.sequence.parameters() if p.requires_grad)
         
         self.optimizer: None|torch.optim.Optimizer = None
+        self.scheduler: None|torch.optim.lr_scheduler._LRScheduler = None
         
     @abstractmethod
     def init_weights(self, module: Module) -> None:
@@ -65,6 +66,18 @@ class BaseModel(Module, ABC):
         """
         self.optimizer = optimizer(self.parameters(), **kwargs)
         self.optimizer
+        
+    def apply_scheduler(self, scheduler, **kwargs):
+        """
+        Example:
+            model = LittleModel()
+            model.apply_optimizer(torch.optim.SGD, lr = 0.0003, momentum = 0.9)
+            model.apply_scheduler(torch.optim.lr_scheduler.StepLR, step_size=30, gamma=0.1)
+        """
+        if not self.optimizer:
+            raise ValueError("Model has no optimizer. Did you forget to call model.apply_optimizer()?")
+        
+        self.scheduler = scheduler(self.optimizer, **kwargs)
         
     def save(self, path: str|Path):
         torch.save(self.state_dict(), path)
@@ -225,6 +238,9 @@ class BaseModel(Module, ABC):
                     if not verbose: continue
                     print(f"Batch {batch} of {len(train_loader)}: Training Loss = {training_loss}; Validation Loss = {validation_loss}")
                     
+            if self.scheduler is not None:
+                self.scheduler.step()
+            
             if save_interval > 0 and (epoch + 1) % save_interval == 0:
                 checkpoint_path = Path(f"{checkpoint_prefix}_{epoch + 1}.pt")
                 self.save(checkpoint_path)
