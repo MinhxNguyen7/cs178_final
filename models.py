@@ -66,11 +66,9 @@ class BaseModel(Module, ABC):
     def save(self, path: str|Path):
         torch.save(self.state_dict(), path)
         
-    @staticmethod
-    def from_checkpoint(path: str|Path):
-        model = LittleModel()
-        model.load_state_dict(torch.load(path))
-        return model
+    def from_checkpoint(self, path: str|Path):
+        self.load_state_dict(torch.load(path))
+        return self
     
     def evaluate(
         self,
