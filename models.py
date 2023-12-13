@@ -31,6 +31,10 @@ class TorchModel(Module, ABC):
         
         self.optimizer: None|torch.optim.Optimizer = None
         self.scheduler: None|torch.optim.lr_scheduler._LRScheduler = None
+    
+    @abstractmethod
+    def __repr__(self):
+        pass
         
     @abstractmethod
     def init_weights(self, module: Module) -> None:
@@ -298,6 +302,9 @@ class LittleModel(TorchModel):
         ])
         
         super().__init__(Sequential(layers))
+        
+    def __repr__(self):
+        return "LittleModel"
 
     @staticmethod
     def init_weights(module: Module) -> None:
@@ -373,6 +380,11 @@ class MoreFCDropout(TorchModel):
         ])
         
         super().__init__(Sequential(layers))
+        
+        self.dropout_rate = dropout_rate
+        
+    def __repr__(self):
+        return f"MoreFCDropout(dropout_rate={self.dropout_rate})"
 
     @staticmethod
     def init_weights(module: Module) -> None:
