@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 from config import CHECKPOINTS_DIR, RESULTS_DIR
-from models import BaseModel, LittleModel
+from models import TorchModel, LittleModel
 
 
 def visualize_losses(train: np.ndarray, test: np.ndarray, save_path: str|Path, show = True):

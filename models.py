@@ -16,7 +16,7 @@ from pathlib import Path
 from data_loading import Dataset
 
 
-class BaseModel(Module, ABC):
+class TorchModel(Module, ABC):
     """
     Abstract class for models implementing the scaffolding.
     """
@@ -258,7 +258,7 @@ class BaseModel(Module, ABC):
 
         return results["losses"]
     
-class LittleModel(BaseModel):
+class LittleModel(TorchModel):
     """
     Takes a greyscale image and predicts one of the eight classes.
     """
@@ -317,7 +317,7 @@ class LittleModel(BaseModel):
         
         return model, loss
 
-class MoreFCDropout(BaseModel):
+class MoreFCDropout(TorchModel):
     """
     Same as little model but with more fully-connected layers. 
     This can potentially help with convergence because not so much information needs to pass through each neuron.
