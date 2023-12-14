@@ -138,7 +138,7 @@ def get_dataloaders(
     dataset = Dataset(legend, img_dir, transform=cnn_preprocess)
     split_datasets = dataset.split(split)
 
-    return map(dataloader_factory, split_datasets)
+    return [dataloader_factory(dataset, batch_size=batch_size) for dataset in split_datasets]
 
 if __name__ == '__main__':
     legend = pd.read_csv(LEGEND_PATH)
