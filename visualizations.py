@@ -6,10 +6,76 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 import pandas as pd
-import torch
-from config import CHECKPOINTS_DIR, RESULTS_DIR
-from models import TorchModel, LittleModel
+from config import RESULTS_DIR
 
+
+def visualize_lr_scheduler_variations(results: pd.DataFrame, show = True):
+    """
+    Visualize experiment results for `lr_scheduler_variations`.
+    
+    Creates one figure for each model being tested. 
+    Each figure contains a grid of subplots, where each row is a learning rate scheduler and its parameters,
+    and each column is a different initial learning rate.
+    
+    Dataframe definition: 
+        pd.DataFrame(columns=["model", "lr_scheduler", "initial_lr", "train_loss", "test_loss", "test_error"])
+    """
+    models = results["model"].unique()
+    for model in models:
+        model_series: pd.DataFrame = results[results["model"] == model]
+        lrs = model_series["initial_lr"].unique()
+        schedulers = model_series["lr_scheduler"].unique()
+        
+        # Calculate number of rows and columns such that the number of subplots is as close to a square as possible
+        num_subplots = len(schedulers) * len(lrs)
+        num_rows = math.floor(math.sqrt(num_subplots))
+        
+        # If the number of subplots is not a perfect square, add an extra row
+        if num_subplots % num_rows != 0: num_rows += 1
+        
+        num_cols = math.ceil(num_subplots / num_rows)
+        
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(20, 10))
+        fig.suptitle(f"Training and validation losses per epoch for {model}")
+        
+        for index, scheduler in enumerate(schedulers):
+            row, col = divmod(index, num_cols)
+            
+            # Plot training and validation losses
+            for lr in lrs:
+                lr_series = model_series[model_series["initial_lr"] == lr]
+                scheduler_series = lr_series[lr_series["lr_scheduler"] == scheduler]
+                
+                axs[row, col].plot(scheduler_series["train_loss"].iloc[0], label=f"lr={lr}")
+                axs[row, col].plot(scheduler_series["test_loss"].iloc[0], label=f"lr={lr}")
+                
+            axs[row, col].set_title(scheduler)
+            axs[row, col].legend()
+            
+        plt.savefig(Path(RESULTS_DIR, model + "_losses.png"))
+        if not show: plt.close()
+        
+        # Plot test errors
+        plt.figure(figsize=(20, 10))
+        plt.suptitle(f"Test error per epoch for {model}")
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(20, 10))
+        fig.suptitle(f"Test error per epoch for {model}")
+        
+        for index, scheduler in enumerate(schedulers):
+            row, col = divmod(index, num_cols)
+            
+            # Plot test errors
+            for lr in lrs:
+                lr_series = model_series[model_series["initial_lr"] == lr]
+                scheduler_series = lr_series[lr_series["lr_scheduler"] == scheduler]
+                
+                axs[row, col].plot(scheduler_series["test_error"].iloc[0], label=f"lr={lr}")
+                
+            axs[row, col].set_title(scheduler)
+            axs[row, col].legend()
+            
+        plt.savefig(Path(RESULTS_DIR, model + "_errors.png"))
+        if not show: plt.close()
 
 def visualize_losses(train: np.ndarray, test: np.ndarray, save_path: str|Path, show = True):
     plt.plot(train, label="train")
