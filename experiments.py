@@ -23,11 +23,11 @@ def lr_scheduler_variations(
     experiment_name: str = "lr_schedulers", 
     schedulers: list[None|type[torch.optim.lr_scheduler.LRScheduler]] = [
         None, 
-        torch.optim.lr_scheduler.CosineAnnealingLR
+        torch.optim.lr_scheduler.ExponentialLR
     ],
     scheduler_kwargs_list: list[dict[str, Any]] = [
         {},
-        {"T_max": 50}
+        {"gamma": 0.9, "last_epoch": 50}
     ],
     initial_lrs: list[float] = [0.001, 0.0005, 0.0001],
     models: Iterable[TorchModel] = (MoreFCDropout(0.3), LittleModel()),
@@ -214,4 +214,9 @@ if __name__ == "__main__":
     # more_fc_dropout_variations()
     # visualize_dropout_variations("more_fc_dropout", [0, 0.1, 0.2, 0.3, 0.4, 0.5])
     
-    lr_scheduler_variations()
+    lr_scheduler_variations(
+        schedulers=[None, torch.optim.lr_scheduler.ExponentialLR], 
+        initial_lrs=[0.00015],
+        scheduler_kwargs_list=[{}, {"gamma": 0.9}],
+        epochs=30,
+    )
