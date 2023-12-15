@@ -69,7 +69,6 @@ class TorchModel(Module, ABC):
             model.apply_optimizer(torch.optim.SGD, lr = 0.0003, momentum = 0.9)
         """
         self.optimizer = optimizer(self.parameters(), **kwargs)
-        self.optimizer
         
     def apply_scheduler(self, scheduler, **kwargs):
         """
