@@ -20,8 +20,11 @@ def visualize_lr_scheduler_variations(results: pd.DataFrame, show = True):
     Dataframe definition: 
         pd.DataFrame(columns=["model", "lr_scheduler", "initial_lr", "train_loss", "test_loss", "test_error"])
     """
+    results = results.fillna("None")
+    
     models = results["model"].unique()
     for model in models:
+        
         model_series: pd.DataFrame = results[results["model"] == model]
         lrs = model_series["initial_lr"].unique()
         schedulers = model_series["lr_scheduler"].unique()
@@ -39,43 +42,64 @@ def visualize_lr_scheduler_variations(results: pd.DataFrame, show = True):
         fig.suptitle(f"Training and validation losses per epoch for {model}")
         
         for index, scheduler in enumerate(schedulers):
-            row, col = divmod(index, num_cols)
+            if num_rows == 1:
+                sub_axs = axs[index]
+            else:
+                row, col = divmod(index, num_cols)
+                sub_axs = axs[row, col]
             
             # Plot training and validation losses
             for lr in lrs:
-                lr_series = model_series[model_series["initial_lr"] == lr]
-                scheduler_series = lr_series[lr_series["lr_scheduler"] == scheduler]
+                series = results[
+                    (results["model"] == model) & 
+                    (results["initial_lr"] == lr) &
+                    (results["lr_scheduler"] == scheduler)
+                ]
                 
-                axs[row, col].plot(scheduler_series["train_loss"].iloc[0], label=f"lr={lr}")
-                axs[row, col].plot(scheduler_series["test_loss"].iloc[0], label=f"lr={lr}")
+                train_losses = np.array(json.loads(series["train_loss"].iloc[0])).mean(axis=-1).flatten()
+                test_losses = np.array(json.loads(series["test_loss"].iloc[0])).mean(axis=-1).flatten()
+                 
+                sub_axs.plot(train_losses, label=f"training")
+                sub_axs.plot(test_losses, label=f"validation")
                 
-            axs[row, col].set_title(scheduler)
-            axs[row, col].legend()
+            sub_axs.set_title(scheduler)
+            sub_axs.set_ylim(0, 1.8)
             
         plt.savefig(Path(RESULTS_DIR, model + "_losses.png"))
-        if not show: plt.close()
+        if not show: 
+            plt.close()
+        else:
+            plt.show()
         
         # Plot test errors
         plt.figure(figsize=(20, 10))
-        plt.suptitle(f"Test error per epoch for {model}")
         fig, axs = plt.subplots(num_rows, num_cols, figsize=(20, 10))
         fig.suptitle(f"Test error per epoch for {model}")
         
         for index, scheduler in enumerate(schedulers):
-            row, col = divmod(index, num_cols)
+            if num_rows == 1:
+                sub_axs = axs[index]
+            else:
+                row, col = divmod(index, num_cols)
+                sub_axs = axs[row, col]
             
             # Plot test errors
             for lr in lrs:
                 lr_series = model_series[model_series["initial_lr"] == lr]
                 scheduler_series = lr_series[lr_series["lr_scheduler"] == scheduler]
                 
-                axs[row, col].plot(scheduler_series["test_error"].iloc[0], label=f"lr={lr}")
+                series = np.array(json.loads(scheduler_series["test_error"].iloc[0])).flatten()
                 
-            axs[row, col].set_title(scheduler)
-            axs[row, col].legend()
+                sub_axs.plot(series)
+                
+            sub_axs.set_title(scheduler)
+            sub_axs.legend()
             
         plt.savefig(Path(RESULTS_DIR, model + "_errors.png"))
-        if not show: plt.close()
+        if not show: 
+            plt.close()
+        else:
+            plt.show()
 
 def visualize_losses(train: np.ndarray, test: np.ndarray, save_path: str|Path, show = True):
     plt.plot(train, label="train")
@@ -180,3 +204,7 @@ def visualize_dropout_variations(model_name: str, dropouts: list[float] = [0, 0.
     plt.legend()
     plt.savefig(Path(RESULTS_DIR, model_name + "dropout_errors.png"))
     if not show: plt.close()
+
+if __name__ == '__main__':
+    df = pd.read_csv(Path(RESULTS_DIR, "lr_schedulers.csv"))
+    visualize_lr_scheduler_variations(df, show=False)
